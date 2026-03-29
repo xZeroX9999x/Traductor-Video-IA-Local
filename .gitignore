@@ -1,0 +1,15 @@
+---
+
+### Archivo 3: `.gitignore`
+*Recuerda guardarlo exactamente como `.gitignore` (con el punto al inicio y sin extensión `.txt`). Esto evitará que subas videos pesados por error.*
+
+```text
+# Ignorar videos y subtítulos de prueba
+*.mp4
+*.mkv
+*.avi
+*.srt
+
+# Ignorar caché de Python
+__pycache__/
+*.pyc
