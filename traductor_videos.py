@@ -1,16 +1,3 @@
-"""
-=========================================================
-TRADUCTOR DE VIDEOS IA — V5 (CON ROMAJI JAPONÉS)
-=========================================================
-Genera subtítulos .srt traducidos al español.
-Si el idioma detectado es japonés, genera además un .srt
-con la letra en Romaji (transliteración fonética latina).
-
-Dependencias extra para Romaji:
-    pip install cutlet unidic-lite
-=========================================================
-"""
-
 import os
 import sys
 import glob
