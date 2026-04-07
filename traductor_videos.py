@@ -55,7 +55,7 @@ def formatear_tiempo(segundos: float) -> str:
     return f"{h:02d}:{m:02d}:{s:02d},{ms:03d}"
 
 
-def buscar_video(carpeta_entrada: str) -> str | None:
+def buscar_video(carpeta_entrada: str):
     """Busca el primer archivo de video en la carpeta de entrada."""
     if not os.path.isdir(carpeta_entrada):
         return None
