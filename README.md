@@ -1,69 +1,70 @@
-# Traductor de Videos IA — V5.2 (Local y Automatico)
+# Traductor de Videos IA — V6 (Separacion Vocal + Romaji)
 
-Traduce automaticamente el audio de cualquier video a subtitulos `.srt` en espanol usando IA 100% local. Si el video es en japones, genera ademas un archivo `.srt` con la letra en **Romaji** (transliteracion fonetica al alfabeto latino).
+Traduce automaticamente el audio de cualquier video a subtitulos `.srt` en espanol usando IA 100% local.
 
----
-
-## Que hace?
-
-1. **Detecta el idioma** del video (18 idiomas soportados + seleccion manual)
-2. **Transcribe el audio** completo usando Whisper (IA de OpenAI)
-3. **Traduce al espanol** usando NLLB (IA de Meta/Facebook)
-4. **Si es japones**: genera `.srt` con texto original + Romaji
-5. **Code-switching**: detecta automaticamente cuando el vocalista cambia de japones a ingles dentro de la misma cancion
-
-### Idiomas soportados
-
-| Idioma     | Codigo | Idioma     | Codigo |
-|------------|--------|------------|--------|
-| Ingles     | en     | Espanol    | es     |
-| Japones    | ja     | Coreano    | ko     |
-| Frances    | fr     | Chino      | zh     |
-| Aleman     | de     | Ruso       | ru     |
-| Italiano   | it     | Portugues  | pt     |
-| Arabe      | ar     | Hindi      | hi     |
-| Turco      | tr     | Polaco     | pl     |
-| Holandes   | nl     | Sueco      | sv     |
-| Indonesio  | id     | Vietnamita | vi     |
+Para **videos musicales**, separa la voz de los instrumentos antes de transcribir, lo que mejora drasticamente la precision. Si el video es en japones, genera ademas Romaji (transliteracion fonetica).
 
 ---
 
-## Estructura de carpetas
+## Pipeline completo
 
 ```
-tu-carpeta/
-├── traductor_videos.py              <- Script principal
-├── 1_Video_Original/                <- Pon aqui tu video (.mp4, .mkv, etc.)
-└── 2_Subtitulos_Traducidos/         <- Aqui aparecen los .srt generados
-    ├── MiVideo_ES.srt               <- Subtitulos en espanol
-    ├── MiVideo_JA.srt               <- Texto original japones (si aplica)
-    └── MiVideo_ROMAJI.srt           <- Letra en Romaji (si aplica)
+Video musical (.mp4)
+  |
+  v
+[FFmpeg] Extraer audio -> audio.wav
+  |
+  v
+[Demucs IA] Separar voz -> vocals.wav (sin guitarras, bateria, bajo)
+  |
+  v
+[Whisper IA] Transcribir voz limpia -> texto original
+  |
+  v
+[Deteccion] Japones o ingles? (por segmento, Unicode)
+  |
+  v
+[NLLB IA] Traducir al espanol (desde idioma correcto)
+  |
+  v
+[cutlet] Generar Romaji (si es japones)
+  |
+  v
+Archivos .srt finales
 ```
 
-Las carpetas se crean automaticamente en la primera ejecucion.
+---
+
+## Archivos generados
+
+| Archivo               | Contenido                              | Cuando se genera         |
+|-----------------------|----------------------------------------|--------------------------|
+| `Video_ES.srt`        | Subtitulos en espanol                  | Siempre                  |
+| `Video_JA.srt`        | Texto original en kanji/kana           | Solo si es japones       |
+| `Video_ROMAJI.srt`    | Letra en alfabeto latino (fonetica)    | Solo si es japones       |
 
 ---
 
 ## Instalacion (Windows)
 
 ### Paso 1 — Python
-Descargar de [python.org](https://www.python.org/downloads/) y marcar la casilla **"Add Python.exe to PATH"** en el instalador.
+Descargar de [python.org](https://www.python.org/downloads/) y marcar **"Add Python.exe to PATH"**.
 
 ### Paso 2 — FFmpeg
-Abrir CMD **como Administrador** y ejecutar:
+CMD como Administrador:
 ```
 winget install ffmpeg
 ```
 
-### Paso 3 — Librerias de IA
-Abrir CMD normal y ejecutar los siguientes comandos:
+### Paso 3 — PyTorch
+CMD normal:
 
-**Con tarjeta grafica NVIDIA (recomendado):**
+Con GPU NVIDIA:
 ```
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 ```
 
-**Sin tarjeta grafica NVIDIA (usa CPU, mas lento):**
+Sin GPU (CPU, mas lento):
 ```
 pip install torch torchvision torchaudio
 ```
@@ -73,40 +74,36 @@ pip install torch torchvision torchaudio
 pip install faster-whisper transformers
 ```
 
-### Paso 5 — Romaji para japones (opcional)
+### Paso 5 — Separacion vocal para musica (recomendado)
+```
+pip install demucs
+```
+> Demucs (de Meta/Facebook) separa la voz de los instrumentos. Sin esto, Whisper escucha guitarras, bateria y voz todo mezclado y la transcripcion sale incorrecta. Con Demucs, Whisper recibe solo la voz limpia.
+
+### Paso 6 — Romaji para japones (opcional)
 ```
 pip install cutlet unidic-lite
 ```
-> Esta libreria permite generar subtitulos con la letra transliterada al alfabeto latino (Romaji) cuando el video es en japones. Si no la instalas, el script funciona igual pero solo genera la traduccion al espanol.
+> Genera subtitulos con la letra transliterada al alfabeto latino.
 
 ---
 
 ## Uso
 
-1. Coloca tu video en la carpeta `1_Video_Original/`
-2. Ejecuta el script:
+1. Coloca tu video en `1_Video_Original/`
+2. Ejecuta:
 ```
 python traductor_videos.py
 ```
-3. Elige el idioma del video (o deja que la IA lo detecte)
-4. Indica si es un video musical o dialogo
-5. Los subtitulos apareceran en `2_Subtitulos_Traducidos/`
+3. Elige el idioma y si es video musical
+4. Resultados en `2_Subtitulos_Traducidos/`
 
 ---
 
 ## Code-switching (Japones + Ingles)
 
-Muchas canciones japonesas (J-Rock, Visual Kei, J-Pop, anime) mezclan japones e ingles en la misma cancion. El script detecta esto automaticamente:
+Muchas canciones japonesas mezclan japones e ingles. El script detecta esto automaticamente analizando los caracteres Unicode de cada segmento:
 
-**Como funciona:**
-- Al elegir "Japones" + "Si es musica", el script NO fuerza el idioma
-- En vez de eso, usa un prompt inicial en japones para guiar a Whisper
-- Whisper puede asi detectar cuando cambia a ingles
-- Cada segmento se analiza por sus caracteres Unicode (kanji/kana vs latino)
-- Los segmentos japoneses se traducen desde japones y se romanizan
-- Los segmentos ingleses se traducen desde ingles (mejor calidad)
-
-**Ejemplo de salida en consola:**
 ```
   [00:00:15,200 -> 00:00:18,900] [JA]
      Original: 闇の中で叫ぶ声が
@@ -118,45 +115,46 @@ Muchas canciones japonesas (J-Rock, Visual Kei, J-Pop, anime) mezclan japones e 
      Espanol:  Destruye el mundo con fuego
 ```
 
+Cada segmento se traduce desde su idioma real (JA o EN), mejorando la calidad.
+
 ---
 
 ## Que es el Romaji?
 
-El japones utiliza tres sistemas de escritura: **Hiragana**, **Katakana** y **Kanji**. El Romaji es la representacion de estos caracteres en el alfabeto latino, lo que permite leer foneticamente el japones sin conocer los caracteres.
+El japones usa tres escrituras: **Hiragana**, **Katakana** y **Kanji**. El Romaji los representa en alfabeto latino:
 
-**Ejemplo:**
 | Japones               | Romaji                          | Espanol                    |
 |-----------------------|---------------------------------|----------------------------|
 | 残酷な天使のテーゼ      | zankoku na tenshi no teze       | La tesis del angel cruel   |
-| 今日はとても暑い        | kyou wa totemo atsui            | Hoy hace mucho calor       |
-
-Esto es especialmente util para seguir la letra de canciones japonesas (anime, J-Pop, J-Rock, Visual Kei).
+| 闇の中で叫ぶ            | yami no naka de sakebu          | Gritar en la oscuridad     |
 
 ---
 
-## Modos de operacion
+## Estructura de carpetas
 
-| Modo           | VAD    | Uso ideal                              |
-|----------------|--------|----------------------------------------|
-| Dialogo        | ON     | Entrevistas, documentales, tutoriales  |
-| Musica         | OFF    | Videos musicales, conciertos, anime    |
-
-El modo musica desactiva el filtro VAD (Voice Activity Detection) que normalmente descarta las voces cantadas como si fueran ruido.
+```
+tu-carpeta/
+├── traductor_videos.py
+├── 1_Video_Original/          <- Pon tu video aqui
+├── 2_Subtitulos_Traducidos/   <- SRTs generados
+└── 3_Temp/                    <- Se crea y borra automaticamente
+```
 
 ---
 
 ## Notas tecnicas
 
-- **Modelo Whisper**: Se usa `medium` por defecto. Si tienes una GPU potente (8GB+ VRAM), puedes cambiar a `large-v3` en el script para mayor precision.
-- **Tolerancia a errores**: Si un segmento falla, el script continua con el siguiente sin perder el progreso.
-- **Flush al disco**: Cada subtitulo se graba inmediatamente al archivo.
+- **Modelo Whisper**: `medium` por defecto. Cambiar a `large-v3` en el script si tienes GPU con 8GB+ VRAM.
+- **Demucs**: La primera ejecucion descarga el modelo (~80MB). Las siguientes son mas rapidas.
+- **Tolerancia a errores**: Si un segmento falla, continua con el siguiente.
+- **Sin Demucs**: El script funciona igual, pero la precision en musica sera menor.
 
 ---
 
-## Comandos Git para actualizar
+## Git
 
 ```bash
 git add .
-git commit -m "V5.2: Code-switching JA/EN, deteccion por segmento"
+git commit -m "V6: Separacion vocal Demucs, code-switching JA/EN, Romaji"
 git push
 ```
