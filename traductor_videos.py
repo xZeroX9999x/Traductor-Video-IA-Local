@@ -1,22 +1,3 @@
-"""
-=========================================================
-TRADUCTOR DE VIDEOS IA — V6 (SEPARACION VOCAL + ROMAJI)
-=========================================================
-Pipeline para videos musicales:
-  1. Extrae audio del video (FFmpeg)
-  2. Separa la voz de los instrumentos (Demucs IA)
-  3. Transcribe la voz limpia (Whisper IA)
-  4. Traduce al espanol (NLLB IA)
-  5. Genera Romaji si es japones (cutlet)
-
-Detecta code-switching japones/ingles por segmento.
-
-Instalacion:
-    pip install faster-whisper transformers demucs
-    pip install cutlet unidic-lite          (opcional, para Romaji)
-=========================================================
-"""
-
 import os
 import sys
 import subprocess
